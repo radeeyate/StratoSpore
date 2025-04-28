@@ -1,6 +1,6 @@
 # StratoSpore
 
-StratoSpore is a high altitude balloon payload which attempts to detect biological altitude utilizing chlorophyll fluorescence. 
+StratoSpore is a high altitude balloon payload which attempts to detect biological altitude utilizing chlorophyll fluorescence.
 
 ## The Experiment
 
@@ -104,6 +104,10 @@ The box will contain the mainboard with the Pico (or Orpheus Pico) and power sup
 
 Some parts will be purchased personally. This list does also not include all purchases needed, and will be updated if needed.	
 
-References
+## References
 
 Fluorescence. [https://www.esa.int/Applications/Observing\_the\_Earth/FutureEO/FLEX/Fluorescence](https://www.esa.int/Applications/Observing_the_Earth/FutureEO/FLEX/Fluorescence). Accessed 22 Mar. 2025\.
+
+## Acknowledgements
+
+Thank you to the [Apex](https://apex.hackclub.com) team for supporting this project and setting up this event!
