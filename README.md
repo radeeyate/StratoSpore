@@ -74,8 +74,6 @@ A power management circuit will be essential to regulate the voltage and ensure 
 - [x] \+3.3V \- **for various sensors**  
       - A regulator is also used
 
-**![][image5]**
-
 ## **Enclosure**
 
 The payload will need to be housed in a protective enclosure. The enclosure must:
