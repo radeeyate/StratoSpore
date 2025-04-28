@@ -1,6 +1,6 @@
 # StratoSpore
 
-StratoSpore is a payload which attempts to detect biological altitude utilizing chlorophyll fluorescence. 
+StratoSpore is a high altitude balloon payload which attempts to detect biological altitude utilizing chlorophyll fluorescence. 
 
 ## The Experiment
 
