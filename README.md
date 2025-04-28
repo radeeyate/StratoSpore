@@ -40,8 +40,6 @@ To have data we can correlate with the fluorescence levels, we will be using a *
 
 We are using Adafruit’s Analog UV Light Sensor Breakout to measure UV index using a photodiode. Originally, we made our own circuit using Adafruit’s schematics, but later decided to save the money by just buying the breakouts. It will be connected to the Raspberry Pi Pico 2’s (or Orpheus Pico) ADC. It will measure UV light in the 240-370 nm range which covers UVB and most of the UVA spectrum. UV index will be measured by dividing the output voltage by 0.1. If the output voltage is 0.5V, the UV index is 5\. It will be directly soldered onto the sensor board, mounted outside the payload.
 
-This was our design based on Adafruit’s breakout before we switched to using the premade solution.
-
 ### Fluorescence Measurement Board
 
 A PCB will be mounted to the flask of algae so we can receive the most accurate reading of Relative Fluorescence Units. An **AS7263-BLGT** sensor is being used because it can capture visible light at 680 nm, which is the peak for chlorophyll fluorescence. It will communicate with the Raspberry Pi Pico 2 (or Orpheus Pico) over UART.  
@@ -65,7 +63,7 @@ All data will be logged with InfluxDB, and viewed as a Grafana dashboard
 
 The payload will require a reliable power source. We will be using:
 
-- [ ] 8x Energizer Ultimate Lithium AA Batteries
+- [x] 8x Energizer Ultimate Lithium AA Batteries
 
 A power management circuit will be essential to regulate the voltage and ensure a stable power supply to all components. As we require many components, we must make two voltage rails so we can provide the correct power to the correct components. We will have the following voltage rails:
 
