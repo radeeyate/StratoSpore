@@ -182,6 +182,8 @@ func FreeMem(ptr unsafe.Pointer) {
 	C.free(ptr)
 }
 
+
+//export ProcessImageToOutputJPEG
 func ProcessImageToOutputJPEG(
 	inputImageBytes unsafe.Pointer, inputImageLen C.int,
 	targetWidth C.uint, targetHeight C.uint,
@@ -242,6 +244,8 @@ func ProcessImageToOutputJPEG(
 	return nil
 }
 
+
+//export CompressImageToCustomFormat
 func CompressImageToCustomFormat(
 	inputImageBytes unsafe.Pointer, inputImageLen C.int,
 	targetWidth C.uint, targetHeight C.uint,
