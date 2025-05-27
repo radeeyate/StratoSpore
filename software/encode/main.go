@@ -177,6 +177,7 @@ func processAndPaletteIndex(img image.Image, targetWidth, targetHeight uint, num
 	return rgbaImg, dynamicPalette, paletteIndexedData.Bytes(), nil
 }
 
+//export FreeMem
 func FreeMem(ptr unsafe.Pointer) {
 	C.free(ptr)
 }
