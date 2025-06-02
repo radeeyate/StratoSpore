@@ -1,4 +1,4 @@
-module encode
+module github.com/radeeyate/StratoSpore/software/encode
 
 go 1.23.4
 
