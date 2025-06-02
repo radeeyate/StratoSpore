@@ -453,5 +453,3 @@ func DecompressCustomFormatToOutputGrayscaleImage(
 	*outputImageLen = C.int(len(pngBytes))
 	return nil
 }
-
-func main() {}
