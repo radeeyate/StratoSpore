@@ -17,3 +17,5 @@ outputs_go
 tmp
 *.zip
 *.joblib
+.env
+server
