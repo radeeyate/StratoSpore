@@ -13,7 +13,7 @@ Chlorophyll fluorescence in algae will exhibit measurable changes in intensity o
 
 When exposed to specific wavelengths of light, chlorophyll fluoresces in a telltale red signature. In fact, a very common high and middle school experiment known as bloody chlorophyll, leverages this effect to produce a haunting blood like color from the otherwise green plant slurry.
 
-Chlorophyll fluorescence usually peaks around 680-685 nm. Using a bandpass filter, we selectively let light into a viewing chamber. This selection yields us a readable level of clean fluorescence which can be measured using an optical sensor made up of photodiodes and read using the Raspberry Pi Pico 2’s (or Orpheus Pico) UART interface. Previously, we planned on just using a normal photodiode, but found an Integrated Circuit that would be much less expensive and easier to use.
+Chlorophyll fluorescence usually peaks around 680-685 nm. Using a bandpass filter, we selectively let light into a viewing chamber. This selection yields us a readable level of clean fluorescence which can be measured using an optical sensor made up of photodiodes and read using the Raspberry Pi Pico 2’s (or Orpheus Pico) I2C interface. Previously, we planned on just using a normal photodiode, but found an Integrated Circuit that would be much less expensive and easier to use.
 
 ---
 
@@ -42,7 +42,7 @@ We are using Adafruit’s Analog UV Light Sensor Breakout to measure UV index us
 
 ### Fluorescence Measurement Board
 
-A PCB will be mounted to the flask of algae so we can receive the most accurate reading of Relative Fluorescence Units. An **AS7263-BLGT** sensor is being used because it can capture visible light at 680 nm, which is the peak for chlorophyll fluorescence. It will communicate with the Raspberry Pi Pico 2 (or Orpheus Pico) over UART.  
+A PCB will be mounted to the flask of algae so we can receive the most accurate reading of Relative Fluorescence Units. An **AS7263-BLGT** sensor is being used because it can capture visible light at 680 nm, which is the peak for chlorophyll fluorescence. It will communicate with the Raspberry Pi Pico 2 (or Orpheus Pico) over I2C.  
 
 ### GPS
 
@@ -57,13 +57,13 @@ The Raspberry Pi Zero 2 WH will act as the central hub for data logging and tran
 - [ ] Attempt to transmit the data live over LoRa  
 - [ ] Potentially perform additional data analysis and prediction
 
-All data will be logged with InfluxDB, and viewed as a Grafana dashboard
+All data will be logged with MongoDB, and viewed from a custom dashboard, with a possible Grafana dashboard post-flight.
 
 ## **Power Supply**
 
 The payload will require a reliable power source. We will be using:
 
-- [x] 8x Energizer Ultimate Lithium AA Batteries
+- [x] 4x Energizer Ultimate Lithium AA Batteries
 
 A power management circuit will be essential to regulate the voltage and ensure a stable power supply to all components. As we require many components, we must make two voltage rails so we can provide the correct power to the correct components. We will have the following voltage rails:
 
@@ -82,11 +82,11 @@ The payload will need to be housed in a protective enclosure. The enclosure must
 - [ ] Mount a sensor board on the top  
 - [ ] Have standoffs for mounting PCBs and more on the bottom  
 - [ ] Have a window to let light in  
-- [ ] Have a camera to take pictures
+- [x] Have a camera to take pictures
 
 ### The Window
 
-We will need light to come in through an acrylic window so our algae can be exposed to light to make it photosynthesize and fluoresce. In front of the window will also be a Raspberry Pi Camera Module 3 to take pictures.  
+We will need light to come in through an acrylic window so our algae can be exposed to light to make it photosynthesize and fluoresce. In front of the window will also be a Raspberry Pi Camera Module 2 to take pictures. Images captured will be heavily compressed using a custom algorithm.
 
 The box will contain the mainboard with the Pico (or Orpheus Pico) and power supplies, a Raspberry Pi Zero 2 W with a 915 Mhz LoRa module, the camera, fluorescence sensor (+ temperature), and the sensor board mounted on the top of the box.  
 
@@ -94,12 +94,12 @@ The box will contain the mainboard with the Pico (or Orpheus Pico) and power sup
 
 | Description | Status | Notes |
 | :---- | :---- | :---- |
-| Finish Power Supply Design | In Progress |  |
-| Order PCBs and Assemble | Not Started |  |
-| Create Firmware | Not Started |  |
+| Finish Power Supply Design | Complete |  |
+| Order PCBs and Assemble | Received, In Progress |  |
+| Create Firmware | In Progress |  |
 | Finish CAD of Box | In Progress |  |
 | Create and print standoff platform | Not Started |  |
-| Order algae and grow more of it | Not Started |  |
+| Order algae and grow more of it | In progress |  |
 | Test everything | Not Started |  |
 
 Some parts will be purchased personally. This list does also not include all purchases needed, and will be updated if needed.	
@@ -111,3 +111,5 @@ Fluorescence. [https://www.esa.int/Applications/Observing\_the\_Earth/FutureEO/F
 ## Acknowledgements
 
 Thank you to the [Apex](https://apex.hackclub.com) team for supporting this project and setting up this event!
+
+Thank you to [OSH Park](https://oshpark.com) for generously sponsoring manufacturing of all custom PCBs!
