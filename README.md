@@ -42,19 +42,19 @@ We are using Adafruit’s Analog UV Light Sensor Breakout to measure UV index us
 
 ### Fluorescence Measurement Board
 
-A PCB will be mounted to the flask of algae so we can receive the most accurate reading of Relative Fluorescence Units. An **AS7263-BLGT** sensor is being used because it can capture visible light at 680 nm, which is the peak for chlorophyll fluorescence. It will communicate with the Raspberry Pi Pico 2 (or Orpheus Pico) over I2C.  
+A PCB will be mounted to the flask of algae so we can receive the most accurate reading of Relative Fluorescence Units. An **AS7343** sensor is being used because it can capture visible light at 690 nm, which is close to the peak for chlorophyll fluorescence. It will communicate with the Raspberry Pi Pico 2 (or Orpheus Pico) over I2C.  
 
 ### GPS
 
-We will be using a Neo 6M GPS breakout from Amazon.
+We are using a Neo 6M GPS breakout from Amazon.
 
 Data from these sensors will be collected at regular intervals and timestamped. The Pico 2 (or Orpheus Pico) will then process this data and transmit it to the Raspberry Pi Zero 2 WH via UART.
 
 The Raspberry Pi Zero 2 WH will act as the central hub for data logging and transmission. It will:
 
-- [ ] Receive data from the Pico 2 (or Orpheus Pico) over UART, I2C, and ADC  
+- [x] Receive data from the Pico 2 (or Orpheus Pico) over UART, I2C, and ADC  
 - [ ] Store the data locally  
-- [ ] Attempt to transmit the data live over LoRa  
+- [x] Attempt to transmit the data live over LoRa  
 - [ ] Potentially perform additional data analysis and prediction
 
 All data will be logged with MongoDB, and viewed from a custom dashboard, with a possible Grafana dashboard post-flight.
