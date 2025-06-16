@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	TargetWidth             uint    = 27
-	TargetHeight            uint    = 15
+	TargetWidth             uint    = 18
+	TargetHeight            uint    = 10
 	NumPaletteColors        int     = 4
 	BlurSigma               float32 = 0.8
 	QuantizationShiftAmount uint    = 5
