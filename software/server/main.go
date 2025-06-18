@@ -2,21 +2,30 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"encoding/base64"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
+	"strconv"
 	"sync"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/google/open-location-code/go"
 )
 
 const (
-	outputDir           = "outputs_go"
-	compressedFileName  = "compressed_image.bin"
+	outputDir            = "outputs_go"
+	compressedFileName   = "compressed_image.bin"
 	decompressedFileName = "decompressed.png"
 )
 
@@ -24,7 +33,29 @@ var (
 	currentCustomEncodedBytes []byte
 	imageMutex                sync.RWMutex
 	imageUpdateChan           = make(chan struct{}, 1)
+	database                  *mongo.Database
+	logs                      *mongo.Collection
+	ctx                       = context.Background()
 )
+
+type Telemetry struct {
+	ID                     primitive.ObjectID `bson:"_id,omitempty"`
+	Altitude               float64            `bson:"altitude"`
+	Time                   int64              `bson:"time"`
+	PlusCode               string             `bson:"plusCode"`
+	HeatingPadTemp         float64            `bson:"heatingPadTemp"`
+	OutsideTemp            float64            `bson:"outsideTemp"`
+	Humidity               float64            `bson:"humidity"`
+	FluorescenceRaw        int64              `bson:"fluorescenceRaw"`
+	FluorescenceIrradiance float64            `bson:"fluorescenceIrradiance"`
+	PicoTemp               float64            `bson:"picoTemp"`
+	PicoMem                int64              `bson:"picoMem"`
+	PiTemp                 float64            `bson:"piTemp"`
+	PiMem                  int64              `bson:"piMem"`
+	RxTime                 int64              `bson:"rxTime"`
+	Latitude               float64            `bson:"latitiude"`
+	Longitude              float64            `bson:"longitude"`
+}
 
 type UploadRequest struct {
 	EncodedImage string `json:"encodedImage"`
@@ -35,6 +66,8 @@ func main() {
 		log.Fatalf("Failed to create output directory %s: %v", outputDir, err)
 	}
 
+	connect()
+
 	app := fiber.New()
 
 	app.Use(logger.New())
@@ -42,6 +75,8 @@ func main() {
 
 	app.Post("/upload", handleUpload)
 	app.Get("/stream", handleStream)
+	app.Post("/telem", handlePostTelemetry)
+	app.Get("/latest-telem", handleGetLatestTelemetry)
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
@@ -50,6 +85,153 @@ func main() {
 
 	log.Println("Server starting on :3000...")
 	log.Fatal(app.Listen(":3000"))
+}
+
+func connect() {
+	clientOptions := options.Client().
+		ApplyURI("mongodb://localhost:27017")
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	database = client.Database("stratospore-ground-testing")
+
+	logs = database.Collection("logs")
+}
+
+func handlePostTelemetry(c *fiber.Ctx) error {
+	altitudeStr := c.Query("altitude")
+	fmt.Println("Received altitude:", altitudeStr)
+	txTimeStr := c.Query("time")
+	plusCode := c.Query("plusCode")
+	heatingPadTempStr := c.Query("heatingPadTemp")
+	outsideTempStr := c.Query("outsideTemp")
+	humidityStr := c.Query("humidity")
+	fluorescenceRawStr := c.Query("fluorescenceRaw")
+	fluorescenceIrradianceStr := c.Query("fluorescenceIrr")
+	picoTempStr := c.Query("picoTemp")
+	picoMemStr := c.Query("picoMem")
+	piTempStr := c.Query("piTemp")
+	piMemStr := c.Query("piMem")
+	rxTime := time.Now().Unix()
+
+	altitude, err := parseFloat(altitudeStr)
+	if err != nil {
+		log.Printf("Failed to parse altitude: %v", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid altitude format"})
+	}
+	txTime, err := parseInt(txTimeStr)
+	if err != nil {
+		log.Printf("Failed to parse time: %v", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid time format"})
+	}
+	heatingPadTemp, err := parseFloat(heatingPadTempStr)
+	if err != nil {
+		log.Printf("Failed to parse heatingPadTemp: %v", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid heatingPadTemp format"})
+	}
+	outsideTemp, err := parseFloat(outsideTempStr)
+	if err != nil {
+		log.Printf("Failed to parse outsideTemp: %v", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid outsideTemp format"})
+	}
+	humidity, err := parseFloat(humidityStr)
+	if err != nil {
+		log.Printf("Failed to parse humidity: %v", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid humidity format"})
+	}
+	fluorescenceRaw, err := parseInt(fluorescenceRawStr)
+	if err != nil {
+		log.Printf("Failed to parse fluorescenceRaw: %v", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid fluorescenceRaw format"})
+	}
+	fluorescenceIrradiance, err := parseFloat(fluorescenceIrradianceStr)
+	if err != nil {
+		log.Printf("Failed to parse fluorescenceIrradiance: %v", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid fluorescenceIrradiance format"})
+	}
+	picoTemp, err := parseFloat(picoTempStr)
+	if err != nil {
+		log.Printf("Failed to parse picoTemp: %v", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid picoTemp format"})
+	}
+	picoMem, err := parseInt(picoMemStr)
+	if err != nil {
+		log.Printf("Failed to parse picoMem: %v", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid picoMem format"})
+	}
+	piTemp, err := parseFloat(piTempStr)
+	if err != nil {
+		log.Printf("Failed to parse piTemp: %v", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid piTemp format"})
+	}
+	piMem, err := parseInt(piMemStr)
+	if err != nil {
+		log.Printf("Failed to parse piMem: %v", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid piMem format"})
+	}
+
+	location, err := olc.Decode(plusCode)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "bad pluscode"})
+	}
+	latitude, longitude := location.Center()
+	fmt.Printf("Latitude: %f, Longitude: %f\n", latitude, longitude)
+
+	telemetryData := Telemetry{
+		Altitude:               altitude,
+		Time:                   txTime,
+		PlusCode:               plusCode,
+		HeatingPadTemp:         heatingPadTemp,
+		OutsideTemp:            outsideTemp,
+		Humidity:               humidity,
+		FluorescenceRaw:        fluorescenceRaw,
+		FluorescenceIrradiance: fluorescenceIrradiance,
+		PicoTemp:               picoTemp,
+		PicoMem:                picoMem,
+		PiTemp:                 piTemp,
+		PiMem:                  piMem,
+		RxTime:                 rxTime,
+		Latitude: latitude,
+		Longitude: longitude,
+	}
+
+	_, err = logs.InsertOne(ctx, telemetryData)
+	if err != nil {
+		log.Printf("Failed to insert telemetry data: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to save telemetry data"})
+	}
+
+	log.Printf("Telemetry received and saved")
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Telemetry received and saved"})
+}
+
+func handleGetLatestTelemetry(c *fiber.Ctx) error {
+	var latestTelemetry Telemetry
+	opts := options.FindOne().SetSort(bson.D{{Key: "rxTime", Value: -1}})
+	err := logs.FindOne(ctx, bson.D{}, opts).Decode(&latestTelemetry)
+	if err == mongo.ErrNoDocuments {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "No telemetry data found"})
+	} else if err != nil {
+		log.Printf("Failed to fetch latest telemetry data: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch telemetry data"})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(latestTelemetry)
+}
+
+func parseFloat(s string) (float64, error) {
+	return strconv.ParseFloat(s, 64)
+}
+
+func parseInt(s string) (int64, error) {
+	return strconv.ParseInt(s, 10, 64)
 }
 
 func handleUpload(c *fiber.Ctx) error {
@@ -205,7 +387,7 @@ const htmlClientPage = `
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Image Stream</title>
+    <title>Image and Telemetry Stream</title>
    <style>
     body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin-top: 20px; margin-bottom: 20px;}
     #imageContainer {
@@ -228,6 +410,20 @@ const htmlClientPage = `
     textarea { width: 80%; min-height: 100px; margin-bottom: 10px; }
     button { padding: 10px 20px; }
     #status { margin-top: 10px; font-style: italic; }
+    #telemetryContainer {
+        border: 1px solid #ccc;
+        padding: 15px;
+        margin-top: 20px;
+        width: 50vw;
+        background-color: #e9e9e9;
+    }
+    #telemetryContainer h2 {
+        margin-top: 0;
+        color: #333;
+    }
+    #telemetryData p {
+        margin: 5px 0;
+    }
 </style>
 </head>
 <body>
@@ -235,24 +431,46 @@ const htmlClientPage = `
     <div id="imageContainer">
         <img id="streamedImage" src="" alt="Waiting for image..." />
     </div>
-
-    <h2>Upload Custom Encoded Image (Base64)</h2>
-    <textarea id="base64Input" placeholder="Paste your custom base64 encoded image data here..."></textarea>
-    <button onclick="uploadImage()">Upload Image</button>
     <div id="status"></div>
+
+    <hr>
+
+    <div id="telemetryContainer">
+        <h2>Latest Telemetry Data</h2>
+        <div id="telemetryData">
+            <p><strong>Altitude:</strong> <span id="altitude">N/A</span> m</p>
+            <p><strong>Time Sent:</strong> <span id="txTime">N/A</span></p>
+            <p><strong>Plus Code:</strong> <span id="plusCode">N/A</span></p>
+            <p><strong>Heating Pad Temp:</strong> <span id="heatingPadTemp">N/A</span> &deg;C</p>
+            <p><strong>Outside Temp:</strong> <span id="outsideTemp">N/A</span> &deg;C</p>
+            <p><strong>Humidity:</strong> <span id="humidity">N/A</span> %</p>
+            <p><strong>Fluorescence Raw (ADC Count):</strong> <span id="fluorescenceRaw">N/A</span></p>
+            <p><strong>Fluorescence Irradiance:</strong> <span id="fluorescenceIrradiance">N/A</span> uW/cm^2</p>
+            <p><strong>Orpheus Pico Temperature:</strong> <span id="picoTemp">N/A</span> &deg;C</p>
+            <p><strong>Orpheus Pico Memory Free:</strong> <span id="picoMem">N/A</span> bytes</p>
+            <p><strong>Raspberry Pi Zero 2 W Temperature:</strong> <span id="piTemp">N/A</span> &deg;C</p>
+            <p><strong>Raspberry Pi Zero 2 W Memory Free:</strong> <span id="piMem">N/A</span> bytes</p>
+            <p><strong>Time Received:</strong> <span id="rxTime">N/A</span></p>
+        </div>
+        <div id="telemetryStatus" style="font-style: italic; margin-top: 10px;">Loading telemetry...</div>
+    </div>
 
     <script>
         const imageElement = document.getElementById('streamedImage');
         const statusElement = document.getElementById('status');
+        const telemetryStatusElement = document.getElementById('telemetryStatus');
 
         const eventSource = new EventSource('/stream');
+
+		var lastUpdated = new Date().toLocaleTimeString();
 
         eventSource.addEventListener('newImage', function(event) {
             console.log('Received newImage event');
             const base64PNG = event.data;
             imageElement.src = 'data:image/png;base64,' + base64PNG;
             imageElement.alt = 'Streamed Image';
-            statusElement.textContent = 'Image updated at ' + new Date().toLocaleTimeString();
+			lastUpdated = new Date().toLocaleTimeString()
+            statusElement.textContent = 'Image updated at ' + lastUpdated;
         });
         
         eventSource.addEventListener('noImage', function(event) {
@@ -279,39 +497,84 @@ const htmlClientPage = `
             }
         });
 
-        function uploadImage() {
-            const base64Data = document.getElementById('base64Input').value;
-            if (!base64Data.trim()) {
-                statusElement.textContent = 'Error: Base64 input cannot be empty.';
-                return;
-            }
-            statusElement.textContent = 'Uploading...';
-
-            fetch('/upload', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ encodedImage: base64Data }),
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(errData => { 
-                        throw new Error(errData.details || errData.error || 'Upload failed: ' + response.statusText);
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Upload successful:', data);
-                statusElement.textContent = 'Upload successful! Stream should update.';
-                document.getElementById('base64Input').value = '';
-            })
-            .catch(error => {
-                console.error('Upload error:', error);
-                statusElement.textContent = 'Upload error: ' + error.message;
-            });
+        function fetchLatestTelemetry() {
+            fetch('/latest-telem')
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            throw new Error('No telemetry data available yet.');
+                        }
+                        return response.json().then(errData => {
+                            throw new Error(errData.error || 'Failed to fetch telemetry: ' + response.statusText);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('altitude').textContent = data.Altitude !== undefined ? data.Altitude.toFixed(2) : 'N/A';
+                    document.getElementById('txTime').textContent = data.Time !== undefined ? formatRelativeTime(data.Time) : 'N/A';
+                    document.getElementById('plusCode').textContent = data.PlusCode || 'N/A';
+                    document.getElementById('heatingPadTemp').textContent = data.HeatingPadTemp !== undefined ? data.HeatingPadTemp.toFixed(2) : 'N/A';
+                    document.getElementById('outsideTemp').textContent = data.OutsideTemp !== undefined ? data.OutsideTemp.toFixed(2) : 'N/A';
+                    document.getElementById('humidity').textContent = data.Humidity !== undefined ? data.Humidity.toFixed(2) : 'N/A';
+                    document.getElementById('fluorescenceRaw').textContent = data.FluorescenceRaw !== undefined ? data.FluorescenceRaw : 'N/A';
+                    document.getElementById('fluorescenceIrradiance').textContent = data.FluorescenceIrradiance !== undefined ? data.FluorescenceIrradiance.toFixed(2) : 'N/A';
+                    document.getElementById('picoTemp').textContent = data.PicoTemp !== undefined ? data.PicoTemp.toFixed(2) : 'N/A';
+                    document.getElementById('picoMem').textContent = data.PicoMem !== undefined ? data.PicoMem : 'N/A';
+                    document.getElementById('piTemp').textContent = data.PiTemp !== undefined ? data.PiTemp.toFixed(2) : 'N/A';
+                    document.getElementById('piMem').textContent = data.PiMem !== undefined ? data.PiMem : 'N/A';
+                    document.getElementById('rxTime').textContent = data.RxTime !== undefined ? new Date(data.RxTime * 1000).toLocaleString() : 'N/A';
+                    
+                    telemetryStatusElement.textContent = 'Telemetry updated at ' + new Date().toLocaleTimeString();
+                    console.log('Telemetry updated:', data);
+                })
+                .catch(error => {
+                    console.error('Error fetching telemetry:', error);
+                    telemetryStatusElement.textContent = 'Error fetching telemetry: ' + error.message;
+                    document.getElementById('altitude').textContent = 'N/A';
+                    document.getElementById('txTime').textContent = 'N/A';
+                    document.getElementById('plusCode').textContent = 'N/A';
+                    document.getElementById('heatingPadTemp').textContent = 'N/A';
+                    document.getElementById('outsideTemp').textContent = 'N/A';
+                    document.getElementById('humidity').textContent = 'N/A';
+                    document.getElementById('fluorescenceRaw').textContent = 'N/A';
+                    document.getElementById('fluorescenceIrradiance').textContent = 'N/A';
+                    document.getElementById('picoTemp').textContent = 'N/A';
+                    document.getElementById('picoMem').textContent = 'N/A';
+                    document.getElementById('piTemp').textContent = 'N/A';
+                    document.getElementById('piMem').textContent = 'N/A';
+                    document.getElementById('rxTime').textContent = 'N/A';
+                });
         }
+
+		function formatRelativeTime(timestamp) {
+  const now = Date.now();
+  const diff = now - timestamp * 1000;
+  const rtf = new Intl.RelativeTimeFormat('en', { style: 'short' });
+
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (seconds < 60) {
+    return rtf.format(-seconds, 'second');
+  } else if (minutes < 60) {
+    return rtf.format(-minutes, 'minute');
+  } else if (hours < 24) {
+    return rtf.format(-hours, 'hour');
+  } else {
+    return rtf.format(-days, 'day');
+  }
+}
+
+
+        setInterval(fetchLatestTelemetry, 500); 
+		setInterval(() => {
+			statusElement.textContent = 'Image updated at ' + lastUpdated + "; Current time: " + new Date().toLocaleTimeString();
+		})
+        fetchLatestTelemetry();
+
     </script>
 </body>
 </html>
