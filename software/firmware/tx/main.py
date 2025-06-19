@@ -45,21 +45,16 @@ COMPIG_ENCODE_ARGS = [
     COMPRESSED_FILE_PATH,
 ]
 
-CS = DigitalInOut(
-    board.CE1
-)
-RESET = DigitalInOut(
-    board.D25
-)
+CS = DigitalInOut(board.CE1)
+RESET = DigitalInOut(board.D25)
 spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
 
-MAX_LORA_PAYLOAD_BYTES = (
-    250
-)
+MAX_LORA_PAYLOAD_BYTES = 250
 
 ser = None
 rfm9x = None
 picam2 = None
+
 
 def get_cpu_temp():
     temp = psutil.sensors_temperatures()["cpu_thermal"][0].current
@@ -91,14 +86,10 @@ def initialize_hardware():
     try:
         rfm9x = adafruit_rfm9x.RFM9x(spi, CS, RESET, 910.0)
         rfm9x.tx_power = 23
-        rfm9x.spreading_factor = (
-            7
-        )
+        rfm9x.spreading_factor = 7
         rfm9x.frequency_mhz = 910.0
         rfm9x.coding_rate = 6
-        rfm9x.low_datarate_optimize = (
-            True
-        )
+        rfm9x.low_datarate_optimize = True
         rfm9x.enable_crc = True
 
         print("RFM9x radio initialized successfully.")
@@ -246,9 +237,7 @@ def main_loop():
                     print(f"Received serial input: '{line}'")
 
                     if line == "CAPTURE_IMAGE":
-                        print(
-                            "Transmitting image via LoRa..."
-                        )
+                        print("Transmitting image via LoRa...")
                         encoded_data_string = capture_and_encode_image()
                         if encoded_data_string:
                             send_lora_message(encoded_data_string, "image")
@@ -257,16 +246,16 @@ def main_loop():
                                 "Skipping LoRa transmission of image due to previous errors."
                             )
                     elif line.startswith("telem-"):
-                        print(
-                            "Recieved telemetry... Transmitting via LoRa."
-                        )
+                        print("Recieved telemetry... Transmitting via LoRa.")
                         cpuTemp = get_cpu_temp()
                         freeMem = psutil.virtual_memory().available
                         data = line.removeprefix("telem-").split(",")
                         data.append(get_cpu_temp())
                         data.append(freeMem)
                         encodedData = datapacker.pack(*data)
-                        send_lora_message(base64.b64encode(encodedData).decode("utf-8"), "telemetry")
+                        send_lora_message(
+                            base64.b64encode(encodedData).decode("utf-8"), "telemetry"
+                        )
                     else:
                         print(
                             f"Unrecognized serial input or invalid Base64 data: '{line}'. Ignoring."
