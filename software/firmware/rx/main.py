@@ -32,7 +32,7 @@ rfm9x.coding_rate = 6
 rfm9x.low_datarate_optimize = True
 rfm9x.enable_crc = True
 
-CONVERSION_FACTOR_RED_UW_CM2 = 15.5 / 5435 # 0.002851886
+CONVERSION_FACTOR_RED_UW_CM2 = 15.5 / 5435  # 0.002851886
 
 print("Starting LoRa reception loop...")
 print("Waiting for messages...")
@@ -100,7 +100,9 @@ def post_telem_to_server(
         response.raise_for_status()
         print(f"Successfully posted telemetry to server. Response: {response.json()}")
     except requests.exceptions.ConnectionError as e:
-        print(f"Connection error: Could not connect to the server at {TELEM_URL}. Is the server running and accessible? Error: {e}")
+        print(
+            f"Connection error: Could not connect to the server at {TELEM_URL}. Is the server running and accessible? Error: {e}"
+        )
     except requests.exceptions.Timeout:
         print("The request timed out.")
     except requests.exceptions.HTTPERrror as e:
