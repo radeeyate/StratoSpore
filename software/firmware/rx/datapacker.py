@@ -14,7 +14,6 @@ def pack(
     outsideTemp,
     humidity,
     fluorescence,
-    batteryVoltage,
     picoTemp,
     picoMem,
     piTemp,
@@ -30,7 +29,6 @@ def pack(
         int(round(float(outsideTemp), 2) * 100),
         int(round(float(humidity), 1) * 10),
         int(fluorescence),
-        int(float(batteryVoltage) * 100),
         int(round(float(picoTemp), 1) * 10),
         int(picoMem),
         int(round(float(piTemp), 1) * 10),
@@ -51,8 +49,7 @@ def unpack(data):
     data[5] = data[5] / 100  # heating pad temp
     data[6] = data[6] / 100  # ambient temp
     data[7] = data[7] / 10  # humidity
-    data[9] = data[9] / 100  # battery voltage
-    data[10] = data[10] / 10  # pico temp
-    data[11] = data[11] / 10  # pi temp
+    data[9] = data[9] / 10  # pico temp
+    data[10] = data[10] / 10  # pi temp
 
     return tuple(data)
