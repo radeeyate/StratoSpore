@@ -11,9 +11,9 @@ import datapacker
 CS = DigitalInOut(board.CE1)
 RESET = DigitalInOut(board.D25)
 spi = busio.SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO)
-
-SERVER_URL = "http://192.168.8.154:3000/upload"
-TELEM_URL = "http://192.168.8.154:3000/telem"
+IP = "10.195.197.48"
+SERVER_URL = f"http://{IP}:3000/upload"
+TELEM_URL = f"http://{IP}:3000/telem"
 
 try:
     rfm9x = adafruit_rfm9x.RFM9x(spi, CS, RESET, 910.0)
@@ -66,6 +66,7 @@ def post_telem_to_server(
     altitude,
     time,
     location,
+    speed,
     uvIndex,
     heatingPadTemp,
     outsideTemp,
@@ -82,6 +83,7 @@ def post_telem_to_server(
         "altitude": altitude,
         "time": time,
         "plusCode": location,
+        "speed": speed,
         "uvIndex": uvIndex,
         "heatingPadTemp": heatingPadTemp,
         "outsideTemp": outsideTemp,
@@ -105,7 +107,7 @@ def post_telem_to_server(
         )
     except requests.exceptions.Timeout:
         print("The request timed out.")
-    except requests.exceptions.HTTPERrror as e:
+    except requests.exceptions.HTTPError as e:
         print(f"HTTP error occurred: {e.response.status_code} - {e.response.text}")
     except requests.exceptions.RequestException as e:
         print(f"An error occured during the request: {e}")
@@ -119,7 +121,7 @@ while True:
             packet_text = str(packet, "utf-8")
             print(len(packet_text))
             decodedText = base64.b64decode(packet_text)
-            if len(decodedText) == 43:
+            if len(decodedText) == 45:
                 unpackedData = datapacker.unpack(decodedText)
                 print(len(unpackedData))
                 fluorescenceIrr = unpackedData[7] * CONVERSION_FACTOR_RED_UW_CM2
