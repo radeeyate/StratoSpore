@@ -42,6 +42,7 @@ type Telemetry struct {
 	ID                     primitive.ObjectID `bson:"_id,omitempty"`
 	Altitude               float64            `bson:"altitude"`
 	Time                   int64              `bson:"time"`
+	Speed                  float64            `bson:"speed"`
 	PlusCode               string             `bson:"plusCode"`
 	HeatingPadTemp         float64            `bson:"heatingPadTemp"`
 	OutsideTemp            float64            `bson:"outsideTemp"`
@@ -109,6 +110,7 @@ func handlePostTelemetry(c *fiber.Ctx) error {
 	altitudeStr := c.Query("altitude")
 	fmt.Println("Received altitude:", altitudeStr)
 	txTimeStr := c.Query("time")
+	speedStr := c.Query("speed")
 	plusCode := c.Query("plusCode")
 	heatingPadTempStr := c.Query("heatingPadTemp")
 	outsideTempStr := c.Query("outsideTemp")
@@ -130,6 +132,11 @@ func handlePostTelemetry(c *fiber.Ctx) error {
 	if err != nil {
 		log.Printf("Failed to parse time: %v", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid time format"})
+	}
+	speed, err := parseFloat(speedStr)
+	if err != nil {
+		log.Printf("Failed to parse speed: %v", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid speed format"})
 	}
 	heatingPadTemp, err := parseFloat(heatingPadTempStr)
 	if err != nil {
@@ -188,6 +195,7 @@ func handlePostTelemetry(c *fiber.Ctx) error {
 		Altitude:               altitude,
 		Time:                   txTime,
 		PlusCode:               plusCode,
+		Speed:                  speed,
 		HeatingPadTemp:         heatingPadTemp,
 		OutsideTemp:            outsideTemp,
 		Humidity:               humidity,
@@ -198,8 +206,8 @@ func handlePostTelemetry(c *fiber.Ctx) error {
 		PiTemp:                 piTemp,
 		PiMem:                  piMem,
 		RxTime:                 rxTime,
-		Latitude: latitude,
-		Longitude: longitude,
+		Latitude:               latitude,
+		Longitude:              longitude,
 	}
 
 	_, err = logs.InsertOne(ctx, telemetryData)

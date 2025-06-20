@@ -49,7 +49,7 @@ def unpack(data):
     data[5] = data[5] / 100  # heating pad temp
     data[6] = data[6] / 100  # ambient temp
     data[7] = data[7] / 10  # humidity
-    data[9] = data[9] / 10  # pico temp
-    data[10] = data[10] / 10  # pi temp
+    data[10] = data[10] / 10  # pico temp
+    data[11] = data[11] / 10  # pi temp
 
     return tuple(data)
