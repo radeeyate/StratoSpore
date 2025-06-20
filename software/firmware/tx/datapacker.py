@@ -1,7 +1,7 @@
 import struct
 import base64
 
-_STRUCT_FORMAT = ">fl11shhhhhhhhIII"
+_STRUCT_FORMAT = ">fl11shhhhhhhIII"
 
 
 def pack(
