@@ -1,7 +1,8 @@
 import struct
 import base64
 
-_STRUCT_FORMAT = ">fl11shhhhhhIII"
+_STRUCT_FORMAT = ">fl11shhhhhhhIII"
+
 
 def pack(
     altitude,
@@ -41,11 +42,12 @@ def unpack(data):
     data = list(struct.unpack(_STRUCT_FORMAT, data))
 
     data[2] = data[2].decode("utf-8").strip("\x00")  # decode location plus code
-    data[3] = data[3] / 10  # uv index
-    data[4] = data[4] / 100  # heating pad temp
-    data[5] = data[5] / 100  # ambient temp
-    data[6] = data[6] / 10  # humidity
-    data[8] = data[8] / 10  # pico temp
-    data[10] = data[10] / 10  # pi temp
+    data[3] = data[3] / 10  # speed (kph)
+    data[4] = data[4] / 10  # uv index
+    data[5] = data[5] / 100  # heating pad temp
+    data[6] = data[6] / 100  # ambient temp
+    data[7] = data[7] / 10  # humidity
+    data[10] = data[10] / 10  # pico temp
+    data[11] = data[11] / 10  # pi temp
 
     return tuple(data)
