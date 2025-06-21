@@ -25,6 +25,8 @@ Chlorophyll fluorescence usually peaks around 680-685 nm. Using a bandpass filte
 
 The payload will consist of 3 PCBs, which will collect, process, and transmit data. We plan on using a Raspberry Pi Zero 2 WH for the main data recording and transmission. If possible, we hope to transmit all recorded data live over a 915Mhz LoRa signal. All sensor data will be collected by a Raspberry Pi Pico 2 (or Orpheus Pico) before being fed into the Pi Zero 2 WH over UART.
 
+![StratoSpore mainboard with 5V and 3.3V regulators along with an Orpheus Pico](./media/mainboard.jpg)
+
 ## **Data Collection and Processing**
 
 The Raspberry Pi Pico 2 will be responsible for interfacing with various sensors, including:
