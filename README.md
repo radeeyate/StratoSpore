@@ -42,6 +42,8 @@ The Raspberry Pi Pico 2 will be responsible for interfacing with various sensors
 
 To have data we can correlate with the fluorescence levels, we will be using a **BME280** to gather certain environmental properties including temperature, humidity, and barometric pressure. It will communicate with the Raspberry Pi Pico 2 (or Orpheus Pico) via its I2C interface.
 
+Despite designing a PCB for the BME280, we were unable to get it to work and decided to use a BME280 breakout board from SparkFun instead.
+
 ### UV Sensor
 
 We are using Adafruit’s Analog UV Light Sensor Breakout to measure UV index using a photodiode. Originally, we made our own circuit using Adafruit’s schematics, but later decided to save the money by just buying the breakouts. It will be connected to the Raspberry Pi Pico 2’s (or Orpheus Pico) ADC. It will measure UV light in the 240-370 nm range which covers UVB and most of the UVA spectrum. UV index will be measured by dividing the output voltage by 0.1. If the output voltage is 0.5V, the UV index is 5\. It will be directly soldered onto the sensor board, mounted outside the payload.
@@ -49,6 +51,8 @@ We are using Adafruit’s Analog UV Light Sensor Breakout to measure UV index us
 ### Fluorescence Measurement Board
 
 A PCB will be mounted to the flask of algae so we can receive the most accurate reading of Relative Fluorescence Units. An **AS7343** sensor is being used because it can capture visible light at 690 nm, which is close to the peak for chlorophyll fluorescence. It will communicate with the Raspberry Pi Pico 2 (or Orpheus Pico) over I2C.  
+
+Despite designing a PCB for the AS7263, we were unable to get it to work and decided to use a AS7343 breakout board from SparkFun instead.
 
 ### GPS
 
@@ -59,11 +63,13 @@ Data from these sensors will be collected at regular intervals and timestamped. 
 The Raspberry Pi Zero 2 WH will act as the central hub for data logging and transmission. It will:
 
 - [x] Receive data from the Pico 2 (or Orpheus Pico) over UART, I2C, and ADC  
-- [ ] Store the data locally  
+- [x] Store the data locally  
 - [x] Attempt to transmit the data live over LoRa  
-- [ ] Potentially perform additional data analysis and prediction
+- [x] Perform additional data analysis and prediction
 
-All data will be logged with MongoDB, and viewed from a custom dashboard, with a possible Grafana dashboard post-flight.
+All data will be logged with MongoDB, and viewed from a custom dashboard.
+
+![StratoSpore receiver dashboard with heavily compressed image and data](./media/dash.png)
 
 ## **Power Supply**
 
@@ -77,6 +83,8 @@ A power management circuit will be essential to regulate the voltage and ensure 
       - A regulator is used for simplicity and cost sake  
 - [x] \+3.3V \- **for various sensors**  
       - A regulator is also used
+
+![5V and 3.3V LDO Regulators](./media/ldos.png)
 
 ## **Enclosure**
 
