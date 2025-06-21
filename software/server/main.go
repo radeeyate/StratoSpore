@@ -42,7 +42,7 @@ type Telemetry struct {
 	ID                     primitive.ObjectID `bson:"_id,omitempty"`
 	Altitude               float64            `bson:"altitude"`
 	Time                   int64              `bson:"time"`
-	Speed                  float64            `bson:"speed"`
+	UVIndex                float64            `bson:"uvIndex"`
 	PlusCode               string             `bson:"plusCode"`
 	HeatingPadTemp         float64            `bson:"heatingPadTemp"`
 	OutsideTemp            float64            `bson:"outsideTemp"`
@@ -110,8 +110,8 @@ func handlePostTelemetry(c *fiber.Ctx) error {
 	altitudeStr := c.Query("altitude")
 	fmt.Println("Received altitude:", altitudeStr)
 	txTimeStr := c.Query("time")
-	speedStr := c.Query("speed")
 	plusCode := c.Query("plusCode")
+	uvIndex := c.Query("uvIndex")
 	heatingPadTempStr := c.Query("heatingPadTemp")
 	outsideTempStr := c.Query("outsideTemp")
 	humidityStr := c.Query("humidity")
@@ -133,15 +133,16 @@ func handlePostTelemetry(c *fiber.Ctx) error {
 		log.Printf("Failed to parse time: %v", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid time format"})
 	}
-	speed, err := parseFloat(speedStr)
-	if err != nil {
-		log.Printf("Failed to parse speed: %v", err)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid speed format"})
-	}
+
 	heatingPadTemp, err := parseFloat(heatingPadTempStr)
 	if err != nil {
 		log.Printf("Failed to parse heatingPadTemp: %v", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid heatingPadTemp format"})
+	}
+	uvIndexFloat, err := parseFloat(uvIndex)
+	if err != nil {
+		log.Printf("Failed to parse uvIndex: %v", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid uvIndex format"})
 	}
 	outsideTemp, err := parseFloat(outsideTempStr)
 	if err != nil {
@@ -195,7 +196,7 @@ func handlePostTelemetry(c *fiber.Ctx) error {
 		Altitude:               altitude,
 		Time:                   txTime,
 		PlusCode:               plusCode,
-		Speed:                  speed,
+		UVIndex:                uvIndexFloat,
 		HeatingPadTemp:         heatingPadTemp,
 		OutsideTemp:            outsideTemp,
 		Humidity:               humidity,
@@ -396,71 +397,150 @@ const htmlClientPage = `
 <html>
 <head>
     <title>Image and Telemetry Stream</title>
-   <style>
-    body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin-top: 20px; margin-bottom: 20px;}
-    #imageContainer {
-        border: 1px solid #ccc;
-        width: 50vw;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-bottom: 20px;
-        background-color: #f0f0f0;
-        overflow: hidden;
-    }
-    #streamedImage {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        image-rendering: pixelated;
-        display: block;
-    }
-    textarea { width: 80%; min-height: 100px; margin-bottom: 10px; }
-    button { padding: 10px 20px; }
-    #status { margin-top: 10px; font-style: italic; }
-    #telemetryContainer {
-        border: 1px solid #ccc;
-        padding: 15px;
-        margin-top: 20px;
-        width: 50vw;
-        background-color: #e9e9e9;
-    }
-    #telemetryContainer h2 {
-        margin-top: 0;
-        color: #333;
-    }
-    #telemetryData p {
-        margin: 5px 0;
-    }
-</style>
+    <meta charset="UTF-8"> <!-- ADD THIS LINE -->
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column; /* Keep body content stacked vertically (h1 then the main content) */
+            align-items: center; /* Center overall content */
+            margin-top: 20px;
+            margin-bottom: 20px;
+            min-width: 800px; /* Ensure enough space for side-by-side */
+        }
+
+        /* New container for the side-by-side layout */
+        #mainContentWrapper {
+            display: flex;
+            flex-direction: row; /* Key change: make children go side-by-side */
+            justify-content: center; /* Center the columns if total width is less than parent */
+            align-items: flex-start; /* Align items to the top (important if content heights differ) */
+            gap: 40px; /* Space between the image column and telemetry column */
+            width: 90vw; /* Make the wrapper take up a good portion of the viewport width */
+            max-width: 1400px; /* Prevent it from becoming too wide on large screens */
+            margin-top: 20px; /* Space below the H1 */
+        }
+
+        /* Left Column (Image and its status) */
+        #leftColumn {
+            flex: 1; /* Allow left column to grow and shrink */
+            min-width: 400px; /* Minimum width for the left column */
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center image within its column */
+        }
+
+        /* Right Column (Telemetry) */
+        #rightColumn {
+            flex: 1; /* Allow right column to grow and shrink */
+            min-width: 400px; /* Minimum width for the right column */
+            display: flex;
+            flex-direction: column;
+        }
+
+        #imageContainer {
+            border: 1px solid #ccc;
+            width: 100%; /* Take full width of its parent column */
+            height: 400px; /* Fixed height for image container for consistent appearance */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0;
+            overflow: hidden;
+            box-sizing: border-box; /* Include padding/border in width calculation */
+        }
+
+        #streamedImage {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Ensures image fits within container without cropping, maintaining aspect ratio */
+            image-rendering: pixelated; /* Good for low-res pixel art/images */
+            display: block;
+        }
+
+        #status {
+            margin-top: 10px;
+            font-style: italic;
+            text-align: center; /* Center the status text below the image */
+            width: 100%; /* Ensure status text takes full width of column */
+        }
+
+        #telemetryContainer {
+            border: 1px solid #ccc;
+            padding: 15px;
+            width: 100%; /* Take full width of its parent column */
+            background-color: #e9e9e9;
+            box-sizing: border-box; /* Include padding/border in width calculation */
+        }
+
+        #telemetryContainer h2 {
+            margin-top: 0;
+            color: #333;
+            text-align: center;
+        }
+
+        #telemetryData p {
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between; /* Space out the label and the value */
+            padding-right: 10px; /* Add some padding to the right for values */
+            gap: 10px; /* Space between label and value */
+        }
+
+        #telemetryData p strong {
+            flex-shrink: 0; /* Prevent label from shrinking */
+        }
+
+        #telemetryData p span {
+            text-align: right; /* Align values to the right */
+            flex-grow: 1; /* Allow values to take up available space */
+        }
+
+        #telemetryStatus {
+            font-style: italic;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        /* Hide the original hr, as it's not needed for side-by-side */
+        hr {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <h1>Live Image Stream</h1>
-    <div id="imageContainer">
-        <img id="streamedImage" src="" alt="Waiting for image..." />
-    </div>
-    <div id="status"></div>
+    <h1>telem & images</h1>
 
-    <hr>
-
-    <div id="telemetryContainer">
-        <h2>Latest Telemetry Data</h2>
-        <div id="telemetryData">
-            <p><strong>Altitude:</strong> <span id="altitude">N/A</span> m</p>
-            <p><strong>Time Sent:</strong> <span id="txTime">N/A</span></p>
-            <p><strong>Plus Code:</strong> <span id="plusCode">N/A</span></p>
-            <p><strong>Heating Pad Temp:</strong> <span id="heatingPadTemp">N/A</span> &deg;C</p>
-            <p><strong>Outside Temp:</strong> <span id="outsideTemp">N/A</span> &deg;C</p>
-            <p><strong>Humidity:</strong> <span id="humidity">N/A</span> %</p>
-            <p><strong>Fluorescence Raw (ADC Count):</strong> <span id="fluorescenceRaw">N/A</span></p>
-            <p><strong>Fluorescence Irradiance:</strong> <span id="fluorescenceIrradiance">N/A</span> uW/cm^2</p>
-            <p><strong>Orpheus Pico Temperature:</strong> <span id="picoTemp">N/A</span> &deg;C</p>
-            <p><strong>Orpheus Pico Memory Free:</strong> <span id="picoMem">N/A</span> bytes</p>
-            <p><strong>Raspberry Pi Zero 2 W Temperature:</strong> <span id="piTemp">N/A</span> &deg;C</p>
-            <p><strong>Raspberry Pi Zero 2 W Memory Free:</strong> <span id="piMem">N/A</span> bytes</p>
-            <p><strong>Time Received:</strong> <span id="rxTime">N/A</span></p>
+    <div id="mainContentWrapper">
+        <div id="leftColumn">
+            <div id="imageContainer">
+                <img id="streamedImage" src="" alt="Waiting for image..." />
+            </div>
+            <div id="status"></div>
         </div>
-        <div id="telemetryStatus" style="font-style: italic; margin-top: 10px;">Loading telemetry...</div>
+
+        <div id="rightColumn">
+            <div id="telemetryContainer">
+                <h2>Latest Telemetry Data</h2>
+                <div id="telemetryData">
+                    <p><strong>Altitude:</strong> <span id="altitude">N/A</span> m</p>
+                    <p><strong>Time Sent:</strong> <span id="txTime">N/A</span></p>
+                    <p><strong>Plus Code:</strong> <span id="plusCode">N/A</span></p>
+                    <p><strong>UV Index:</strong> <span id="uvIndex">N/A</span></p>
+                    <p><strong>Heating Pad Temp:</strong> <span id="heatingPadTemp">N/A</span>°C</p>
+                    <p><strong>Outside Temp:</strong> <span id="outsideTemp">N/A</span>°C</p>
+                    <p><strong>Humidity:</strong> <span id="humidity">N/A</span> %</p>
+                    <p><strong>Fluorescence Raw (ADC Count):</strong> <span id="fluorescenceRaw">N/A</span></p>
+                    <p><strong>Fluorescence Irradiance:</strong> <span id="fluorescenceIrradiance">N/A</span> uW/cm^2</p>
+                    <p><strong>Orpheus Pico Temperature:</strong> <span id="picoTemp">N/A</span>°C</p>
+                    <p><strong>Orpheus Pico Memory Free:</strong> <span id="picoMem">N/A</span> bytes</p>
+                    <p><strong>Raspberry Pi Zero 2 W Temperature:</strong> <span id="piTemp">N/A</span>°C</p>
+                    <p><strong>Raspberry Pi Zero 2 W Memory Free:</strong> <span id="piMem">N/A</span> bytes</p>
+                    <p><strong>Time Received:</strong> <span id="rxTime">N/A</span></p>
+                </div>
+                <div id="telemetryStatus" style="font-style: italic; margin-top: 10px;">Loading telemetry...</div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -468,25 +548,29 @@ const htmlClientPage = `
         const statusElement = document.getElementById('status');
         const telemetryStatusElement = document.getElementById('telemetryStatus');
 
+
         const eventSource = new EventSource('/stream');
 
-		var lastUpdated = new Date().toLocaleTimeString();
+
+        var lastUpdated = new Date().toLocaleTimeString();
+
 
         eventSource.addEventListener('newImage', function(event) {
             console.log('Received newImage event');
             const base64PNG = event.data;
             imageElement.src = 'data:image/png;base64,' + base64PNG;
             imageElement.alt = 'Streamed Image';
-			lastUpdated = new Date().toLocaleTimeString()
+            lastUpdated = new Date().toLocaleTimeString()
             statusElement.textContent = 'Image updated at ' + lastUpdated;
         });
-        
+
         eventSource.addEventListener('noImage', function(event) {
             console.log('Received noImage event:', event.data);
             imageElement.src = "";
             imageElement.alt = event.data || 'No image available yet.';
             statusElement.textContent = event.data || 'Waiting for first image upload.';
         });
+
 
         eventSource.addEventListener('error', function(event) {
             if (event.data) {
@@ -505,6 +589,7 @@ const htmlClientPage = `
             }
         });
 
+
         function fetchLatestTelemetry() {
             fetch('/latest-telem')
                 .then(response => {
@@ -522,6 +607,7 @@ const htmlClientPage = `
                     document.getElementById('altitude').textContent = data.Altitude !== undefined ? data.Altitude.toFixed(2) : 'N/A';
                     document.getElementById('txTime').textContent = data.Time !== undefined ? formatRelativeTime(data.Time) : 'N/A';
                     document.getElementById('plusCode').textContent = data.PlusCode || 'N/A';
+                    document.getElementById('uvIndex').textContent = data.UVIndex !== undefined ? data.UVIndex.toFixed(2) : 'N/A';
                     document.getElementById('heatingPadTemp').textContent = data.HeatingPadTemp !== undefined ? data.HeatingPadTemp.toFixed(2) : 'N/A';
                     document.getElementById('outsideTemp').textContent = data.OutsideTemp !== undefined ? data.OutsideTemp.toFixed(2) : 'N/A';
                     document.getElementById('humidity').textContent = data.Humidity !== undefined ? data.Humidity.toFixed(2) : 'N/A';
@@ -532,7 +618,7 @@ const htmlClientPage = `
                     document.getElementById('piTemp').textContent = data.PiTemp !== undefined ? data.PiTemp.toFixed(2) : 'N/A';
                     document.getElementById('piMem').textContent = data.PiMem !== undefined ? data.PiMem : 'N/A';
                     document.getElementById('rxTime').textContent = data.RxTime !== undefined ? new Date(data.RxTime * 1000).toLocaleString() : 'N/A';
-                    
+
                     telemetryStatusElement.textContent = 'Telemetry updated at ' + new Date().toLocaleTimeString();
                     console.log('Telemetry updated:', data);
                 })
@@ -542,6 +628,7 @@ const htmlClientPage = `
                     document.getElementById('altitude').textContent = 'N/A';
                     document.getElementById('txTime').textContent = 'N/A';
                     document.getElementById('plusCode').textContent = 'N/A';
+                    document.getElementById('uvIndex').textContent = 'N/A';
                     document.getElementById('heatingPadTemp').textContent = 'N/A';
                     document.getElementById('outsideTemp').textContent = 'N/A';
                     document.getElementById('humidity').textContent = 'N/A';
@@ -555,35 +642,36 @@ const htmlClientPage = `
                 });
         }
 
-		function formatRelativeTime(timestamp) {
-  const now = Date.now();
-  const diff = now - timestamp * 1000;
-  const rtf = new Intl.RelativeTimeFormat('en', { style: 'short' });
 
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
+        function formatRelativeTime(timestamp) {
+            const now = Date.now();
+            const diff = now - timestamp * 1000;
+            const rtf = new Intl.RelativeTimeFormat('en', { style: 'short' });
 
-  if (seconds < 60) {
-    return rtf.format(-seconds, 'second');
-  } else if (minutes < 60) {
-    return rtf.format(-minutes, 'minute');
-  } else if (hours < 24) {
-    return rtf.format(-hours, 'hour');
-  } else {
-    return rtf.format(-days, 'day');
-  }
-}
+            const seconds = Math.floor(diff / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
 
 
-        setInterval(fetchLatestTelemetry, 500); 
-		setInterval(() => {
-			statusElement.textContent = 'Image updated at ' + lastUpdated + "; Current time: " + new Date().toLocaleTimeString();
-		})
+            if (seconds < 60) {
+                return rtf.format(-seconds, 'second');
+            } else if (minutes < 60) {
+                return rtf.format(-minutes, 'minute');
+            } else if (hours < 24) {
+                return rtf.format(-hours, 'hour');
+            } else {
+                return rtf.format(-days, 'day');
+            }
+        }
+
+
+        setInterval(fetchLatestTelemetry, 500);
+        setInterval(() => {
+            statusElement.textContent = 'Image updated at ' + lastUpdated + "; Current time: " + new Date().toLocaleTimeString();
+        }, 1000);
         fetchLatestTelemetry();
 
     </script>
 </body>
-</html>
-`
+</html>`

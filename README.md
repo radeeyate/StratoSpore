@@ -1,5 +1,9 @@
 # StratoSpore
 
+<p align="center">
+  <img src="./media/wordmark.png" alt="StratoSpore Wordmark; A green balloon with circuitry."/>
+</p>
+
 StratoSpore is a high altitude balloon payload which attempts to detect biological altitude utilizing chlorophyll fluorescence.
 
 ## The Experiment
@@ -112,3 +116,5 @@ Fluorescence. [https://www.esa.int/Applications/Observing\_the\_Earth/FutureEO/F
 Thank you to the [Apex](https://apex.hackclub.com) team for supporting this project and setting up this event!
 
 Thank you to [OSH Park](https://oshpark.com) for generously sponsoring manufacturing of all custom PCBs!
+
+Thank you to [Sean Wallace](https://seanjw.com/) for creating the wordmark/logo for StratoSpore!

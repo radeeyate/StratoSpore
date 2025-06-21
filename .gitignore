@@ -33,3 +33,4 @@ dl
 *~
 *.pyc
 buildroot
+!media/*
