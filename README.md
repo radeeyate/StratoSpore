@@ -76,12 +76,11 @@ A power management circuit will be essential to regulate the voltage and ensure 
 
 The payload will need to be housed in a protective enclosure. The enclosure must:
 
-- [ ] Be lightweight  
-- [ ] Be durable enough to withstand the conditions of high altitude flight  
-- [ ] Protect the electronics from temperature extremes and UV radiation  
-- [ ] Mount a sensor board on the top  
-- [ ] Have standoffs for mounting PCBs and more on the bottom  
-- [ ] Have a window to let light in  
+- [x] Be lightweight (ish)
+- [x] Be durable enough to withstand the conditions of high altitude flight  
+- [x] Protect the electronics from temperature extremes and UV radiation  
+- [x] Mount a sensor board on the top  
+- [x] Have a window to let light in  
 - [x] Have a camera to take pictures
 
 ### The Window
@@ -92,15 +91,15 @@ The box will contain the mainboard with the Pico (or Orpheus Pico) and power sup
 
 ## Current Tasks
 
-| Description | Status | Notes |
-| :---- | :---- | :---- |
-| Finish Power Supply Design | Complete |  |
-| Order PCBs and Assemble | Received, In Progress |  |
-| Create Firmware | In Progress |  |
-| Finish CAD of Box | In Progress |  |
-| Create and print standoff platform | Not Started |  |
-| Order algae and grow more of it | In progress |  |
-| Test everything | Not Started |  |
+| Description | Status |
+| :---- | :---- |
+| Finish Power Supply Design | Complete |
+| Order PCBs and Assemble | Complete |
+| Create Firmware | Complete |
+| Order algae and grow more of it | Complete |
+| Test everything | Complete |
+| [Launch balloon](https://apex.hackclub.com) | Complete |
+| Recover balloon and analyze data | In Progress |
 
 Some parts will be purchased personally. This list does also not include all purchases needed, and will be updated if needed.	
 
