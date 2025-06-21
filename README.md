@@ -5,7 +5,7 @@ StratoSpore is a high altitude balloon payload which attempts to detect biologic
 ## The Experiment
 
 - Measure the fluorescence of chlorophyll in algae using photodiodes and light  
-- Measure other stuff (e.g. altitude, geographical location, temperature, UV exposure, etc.) using sensors, and correlate the data with the photodiode output
+- Measure other data (e.g. altitude, geographical location, temperature, UV exposure, etc.) using sensors, and correlate the data with the spectral sensor output
 
 ## The Hypothesis
 
