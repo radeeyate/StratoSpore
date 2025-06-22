@@ -6,7 +6,7 @@ from sklearn.metrics import mean_absolute_error, r2_score
 import matplotlib.pyplot as plt
 import joblib
 
-DATA_FILE = "balloon_sensor_data.csv"
+DATA_FILE = "flight-data.csv"
 MODEL_FILENAME = "altitude_predictor_model.joblib"
 
 try:
@@ -20,10 +20,10 @@ except FileNotFoundError:
     exit()
 
 features = [
-    "algae_fluorescence_680nm",
-    "uv_index",
-    "temperature_celsius",
-    "humidity_percent",
+    "fluorescenceRaw",
+    "uvIndex",
+    "outsideTemp",
+    "humidity",
 ]
 X = df[features]
 
@@ -77,10 +77,10 @@ print(f"\nModel saved as {MODEL_FILENAME}")
 new_sensor_data = pd.DataFrame(
     [
         {
-            "algae_fluorescence_680nm": 35,
-            "uv_index": 7.5,
-            "temperature_celsius": -25,
-            "humidity_percent": 12,
+            "fluorescenceRaw": 35,
+            "uvIndex": 7.5,
+            "outsideTemp": -25,
+            "humidity": 12,
         }
     ]
 )
@@ -93,10 +93,10 @@ print(f"Estimated Altitude: {estimated_altitude[0]:.2f} meters")
 new_sensor_data_higher = pd.DataFrame(
     [
         {
-            "algae_fluorescence_680nm": 15,
-            "uv_index": 10.0,
-            "temperature_celsius": -50,
-            "humidity_percent": 3,
+            "fluorescenceRaw": 15,
+            "uvIndex": 10.0,
+            "outsideTemp": -50,
+            "humidity": 3,
         }
     ]
 )
