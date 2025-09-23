@@ -113,9 +113,7 @@ The box will contain the mainboard with the Pico (or Orpheus Pico) and power sup
 | Order algae and grow more of it | Complete |
 | Test everything | Complete |
 | [Launch balloon](https://apex.hackclub.com) | Complete |
-| Recover balloon and analyze data | In Progress |
-
-Some parts will be purchased personally. This list does also not include all purchases needed, and will be updated if needed.	
+| Analyze data | Complete |
 
 ## References
 
