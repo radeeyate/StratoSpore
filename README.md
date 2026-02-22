@@ -6,6 +6,8 @@
 
 StratoSpore is a high altitude balloon payload which attempts to detect biological altitude utilizing chlorophyll fluorescence.
 
+You can read my writeup about StratoSpore on my [blog](https://radi8.dev/blog/stratospore/).
+
 ## The Experiment
 
 - Measure the fluorescence of chlorophyll in algae using photodiodes and light  
@@ -67,13 +69,13 @@ The Raspberry Pi Zero 2 WH will act as the central hub for data logging and tran
 - [x] Attempt to transmit the data live over LoRa  
 - [x] Perform additional data analysis and prediction
 
-All data will be logged with MongoDB, and viewed from a custom dashboard.
+All data is logged with MongoDB, and viewed from a custom dashboard.
 
 ![StratoSpore receiver dashboard with heavily compressed image and data](./media/dash.png)
 
 ## **Power Supply**
 
-The payload will require a reliable power source. We will be using:
+The payload required a reliable power source. We used:
 
 - [x] 4x Energizer Ultimate Lithium AA Batteries
 
@@ -88,7 +90,7 @@ A power management circuit will be essential to regulate the voltage and ensure 
 
 ## **Enclosure**
 
-The payload will need to be housed in a protective enclosure. The enclosure must:
+The payload is housed in a protective enclosure. The enclosure must:
 
 - [x] Be lightweight (ish)
 - [x] Be durable enough to withstand the conditions of high altitude flight  
